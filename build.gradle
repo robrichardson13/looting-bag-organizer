@@ -1,0 +1,93 @@
+plugins {
+	id 'java'
+}
+
+repositories {
+	mavenLocal()
+	maven {
+		url = 'https://repo.runelite.net'
+		content {
+			includeGroupByRegex("net\\.runelite.*")
+		}
+	}
+	mavenCentral()
+}
+
+// Pinned to the version in plugin-hub's runelite.version: the hub packager force-overrides every
+// net.runelite dependency to that version anyway, so matching it locally means we compile against
+// exactly what CI compiles against.
+def runeLiteVersion = '1.12.38'
+def pluginMainClass = 'io.robrichardson.lootingbagorganizer.LootingBagOrganizerPluginTest'
+
+dependencies {
+	compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+
+	compileOnly 'org.projectlombok:lombok:1.18.30'
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+	testImplementation 'junit:junit:4.13.2'
+	testImplementation 'org.mockito:mockito-core:3.12.4'
+	testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+	testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
+}
+
+group = 'io.robrichardson.lootingbagorganizer'
+version = '0.1.0'
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.release.set(11)
+}
+
+tasks.named('test') {
+	systemProperty 'java.awt.headless', 'true'
+	testLogging {
+		showStandardStreams = false
+	}
+}
+
+tasks.register('runClient', JavaExec) {
+	group = 'application'
+	description = 'Run RuneLite with the plugin loaded (isolated dev environment)'
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = pluginMainClass
+	jvmArgs = [
+		'-ea',
+		'--add-exports', 'java.desktop/com.apple.eawt=ALL-UNNAMED',
+		'--add-opens', 'java.desktop/com.apple.eawt=ALL-UNNAMED',
+		'--add-opens', 'java.desktop/sun.awt=ALL-UNNAMED',
+		'--add-opens', 'java.desktop/java.awt=ALL-UNNAMED'
+	]
+	args = [
+		'--developer-mode',
+		'--debug',
+		'--profile=dev',
+		'--sessionfile=dev-session.properties'
+	]
+}
+
+tasks.register('shadowJar', Jar) {
+	dependsOn configurations.testRuntimeClasspath
+	manifest {
+		attributes('Main-Class': pluginMainClass, 'Multi-Release': true)
+	}
+
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	from sourceSets.main.output
+	from sourceSets.test.output
+	from {
+		configurations.testRuntimeClasspath.collect { file ->
+			file.isDirectory() ? file : zipTree(file)
+		}
+	}
+
+	exclude 'META-INF/INDEX.LIST'
+	exclude 'META-INF/*.SF'
+	exclude 'META-INF/*.DSA'
+	exclude 'META-INF/*.RSA'
+	exclude '**/module-info.class'
+
+	group = BasePlugin.BUILD_GROUP
+	archiveClassifier.set('shadow')
+	archiveFileName.set("${rootProject.name}-${project.version}-all.jar")
+}
