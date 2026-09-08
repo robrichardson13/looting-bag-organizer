@@ -1,8 +1,10 @@
 package io.robrichardson.lootingbagorganizer.model;
 
+import com.google.gson.Gson;
 import io.robrichardson.lootingbagorganizer.LootingBagOrganizerConfig;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 
 /**
@@ -10,43 +12,62 @@ import net.runelite.client.config.ConfigManager;
  * {@link #KEY} in config group {@code lootingbagorganizer}. RS-profile keys always sync with a
  * signed-in RuneLite account, so the arrangement follows the character, not the machine.
  */
+@Slf4j
 @Singleton
 public class LayoutStore
 {
 	static final String KEY = "layout";
 
 	private final ConfigManager configManager;
+	private final Gson gson;
 
 	@Inject
-	public LayoutStore(ConfigManager configManager)
+	public LayoutStore(ConfigManager configManager, Gson gson)
 	{
 		this.configManager = configManager;
+		this.gson = gson;
 	}
 
-	public BagLayout load()
+	/**
+	 * @param profileKey the RS profile key, from {@code configManager.getRSProfileKey()}. A
+	 * {@code null} key (not yet resolved) returns a fresh, empty layout rather than throwing.
+	 */
+	public BagLayout load(String profileKey)
 	{
-		// TODO: configManager.getRSProfileConfiguration(CONFIG_GROUP, KEY) -> fromJson -> normalise
-		return new BagLayout();
+		String json = profileKey == null ? null
+			: configManager.getConfiguration(LootingBagOrganizerConfig.CONFIG_GROUP, profileKey, KEY);
+		if (json == null || json.isEmpty())
+		{
+			return new BagLayout();
+		}
+
+		try
+		{
+			BagLayout layout = gson.fromJson(json, BagLayout.class);
+			if (layout == null)
+			{
+				return new BagLayout();
+			}
+			layout.normalise();
+			return layout;
+		}
+		catch (RuntimeException e)
+		{
+			// JsonSyntaxException for malformed JSON, but also anything normalise() cannot repair. A
+			// fresh layout beats letting the exception escape into the render loop, where it would
+			// recur every frame.
+			log.warn("Discarding unreadable looting bag layout for profile {}", profileKey, e);
+			return new BagLayout();
+		}
 	}
 
-	public void save(BagLayout layout)
+	public void save(String profileKey, BagLayout layout)
 	{
-		// TODO: configManager.setRSProfileConfiguration(CONFIG_GROUP, KEY, toJson(layout))
-	}
+		if (profileKey == null)
+		{
+			return;
+		}
 
-	static String toJson(BagLayout layout)
-	{
-		throw new UnsupportedOperationException("not implemented");
-	}
-
-	static BagLayout fromJson(String json)
-	{
-		throw new UnsupportedOperationException("not implemented");
-	}
-
-	@SuppressWarnings("unused")
-	private static String group()
-	{
-		return LootingBagOrganizerConfig.CONFIG_GROUP;
+		configManager.setConfiguration(LootingBagOrganizerConfig.CONFIG_GROUP, profileKey, KEY, gson.toJson(layout));
 	}
 }
