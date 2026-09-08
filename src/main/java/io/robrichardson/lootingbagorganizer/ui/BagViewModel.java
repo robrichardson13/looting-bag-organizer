@@ -44,8 +44,7 @@ public class BagViewModel
 	}
 
 	/**
-	 * Resolves each container slot to a display slot per the saved layout (docs/PLAN.md sections 2
-	 * and 7, card C4).
+	 * Resolves each container slot to a display slot per the saved layout's placement rules.
 	 *
 	 * <p>Pass 1 places pinned ids: for each layout slot in ascending index order that reserves an
 	 * item id, the first unclaimed container copy of that id (ascending container index) claims it.

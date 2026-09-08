@@ -11,7 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Card C4 acceptance tests for {@link BagViewModel#arrange(int[])}. Plain JUnit 4, no Mockito, no
+ * Acceptance tests for {@link BagViewModel#arrange(int[])}. Plain JUnit 4, no Mockito, no
  * RuneLite imports.
  */
 public class BagViewModelArrangeTest

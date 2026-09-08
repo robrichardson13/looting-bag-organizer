@@ -19,18 +19,17 @@ import net.runelite.client.input.MouseListener;
  * {@link BagViewController} publishes each client-thread pass ({@link
  * BagViewController#isViewOpen()}, {@link BagViewController#getGridBounds()}, {@link
  * BagViewController#getSlots()}), and posts every mutation with {@link
- * BagViewController#post(Runnable)} so it runs on the client thread at the top of the next frame
- * (docs/PLAN.md section 3.3).
+ * BagViewController#post(Runnable)} so it runs on the client thread at the top of the next frame.
  *
- * <p>Registered at mouse-listener position 0 (docs/PLAN.md section 3.4), ahead of the game's own
- * handling, so a consumed press never reaches the client's mouse buffer: nothing is written into
- * the world, so nothing triggers the modal close that would otherwise dismiss the interface.
+ * <p>Registered at mouse-listener position 0, ahead of the game's own handling, so a consumed
+ * press never reaches the client's mouse buffer: nothing is written into the world, so nothing
+ * triggers the modal close that would otherwise dismiss the interface.
  *
  * <p>Right button and mouse-move are never consumed, so {@code Examine}, the value tooltip and
  * hover tooltips keep working exactly as they do on an unmodified client. Alt is respected too, so
  * alt-dragging other RuneLite overlays over the bag keeps working.
  *
- * <h2>Coordinate space (flock cards 23, 24, 25, 27)</h2>
+ * <h2>Coordinate space</h2>
  *
  * <p>Position 0 is also where core's {@code StretchedModePlugin} inserts its
  * {@code TranslateMouseListener}, and {@code MouseManager.registerMouseListener(int, l)} is a list
@@ -38,15 +37,14 @@ import net.runelite.client.input.MouseListener;
  * ordering. When Translate runs ahead of us the {@link MouseEvent} we receive is already
  * game-canvas space; when it runs behind us (e.g. immediately after we re-enable) the event still
  * carries raw, stretched canvas pixels. Widget bounds are always game space, so hit-testing the
- * raw event is wrong in the second ordering (card 23) and scaling it unconditionally is wrong in
- * the first.
+ * raw event is wrong in the second ordering and scaling it unconditionally is wrong in the first.
  *
- * <p>Card 24 tried to sidestep the question entirely by hit-testing
- * {@link Client#getMouseCanvasPosition()}. Card 25 disproved that from the shipped injected
- * client's bytecode: the client updates that tracked position <b>after</b> the whole
- * {@code MouseManager} chain has run and <b>only when the event comes back unconsumed</b>. We
- * consume every {@code MOUSE_DRAGGED}, so during our own drag the getter freezes at the press
- * point, the 4px slop is never crossed and the drag silently does nothing.
+ * <p>Hit-testing {@link Client#getMouseCanvasPosition()} instead looked like a way to sidestep the
+ * question entirely, but the shipped client's bytecode disproves it: the client updates that
+ * tracked position <b>after</b> the whole {@code MouseManager} chain has run and <b>only when the
+ * event comes back unconsumed</b>. We consume every {@code MOUSE_DRAGGED}, so during our own drag
+ * the getter freezes at the press point, the 4px slop is never crossed and the drag silently does
+ * nothing.
  *
  * <p>So the space is measured once per gesture instead of assumed:
  *
@@ -74,7 +72,7 @@ import net.runelite.client.input.MouseListener;
  * thread, in this very listener chain, in {@code TranslateMouseListener}.
  *
  * <p>Every hit-test decision below logs both coordinate spaces, and the press logs the latched
- * orientation and the scale it used. That logging is how cards 23 and 25 were both caught.
+ * orientation and the scale it used. That logging is how this ordering bug was originally caught.
  */
 @Slf4j
 @Singleton
@@ -279,7 +277,7 @@ public class BagInputListener implements MouseListener, KeyListener
 		}
 
 		// Never the tracked canvas position here: we consume drags, so the client never advances
-		// it and it would stay frozen at the press point for the whole gesture (card 25).
+		// it and it would stay frozen at the press point for the whole gesture.
 		Point game = gamePoint(e);
 
 		if (!dragActive)

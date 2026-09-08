@@ -30,12 +30,12 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 /**
- * Covers the card 12 acceptance list for {@link BagInputListener}: consumption is decided purely
+ * Covers the full acceptance list for {@link BagInputListener}: consumption is decided purely
  * from {@link BagViewController}'s published volatiles (never the model), a drag only arms from a
  * left press on an occupied slot inside the grid, and every mutation is posted to the controller's
  * queue rather than applied directly.
  *
- * <h2>The client model this harness simulates (cards 23, 25, 27)</h2>
+ * <h2>The client model this harness simulates</h2>
  *
  * <p>Every test writes its coordinates in <b>game-canvas space</b> -- the space widget bounds and
  * therefore {@link BagViewController#getGridBounds()} live in. The harness then decides what the
@@ -43,23 +43,23 @@ import org.mockito.junit.MockitoJUnitRunner;
  *
  * <ul>
  *   <li>{@link #deliverPreTranslate} -- whether we sit ahead of core's
- *       {@code TranslateMouseListener} in the {@code MouseManager} list (card 23). Ahead of it, the
- *       event carries raw stretched-canvas pixels; behind it, game space.</li>
+ *       {@code TranslateMouseListener} in the {@code MouseManager} list. Ahead of it, the event
+ *       carries raw stretched-canvas pixels; behind it, game space.</li>
  *   <li>{@link #stretchBy} / {@link #noStretch} -- the stretched-mode scale, published through the
  *       mocked {@link Client#isStretchedEnabled()}, {@link Client#getStretchedDimensions()} and
  *       {@link Client#getRealDimensions()} exactly as the real client publishes it, i.e. as two
  *       integer {@link Dimension}s whose ratio is the scale.</li>
  * </ul>
  *
- * <p>Crucially, {@link #dispatch} models the rule card 25 established from the shipped
- * injected-client bytecode: the client's tracked pointer position
- * ({@link Client#getMouseCanvasPosition()}) is written only by its {@code mouseMoved} handler and
- * by the <b>unconsumed</b> path of its {@code mouseDragged} handler, both of which run <b>after</b>
- * the whole {@code MouseManager} chain. Presses, releases and clicks never write it. So a listener
- * that consumes drags -- as this one must, to keep drag events from reaching the game -- sees that
- * position frozen at the press point for the whole gesture. The card 24 harness re-stubbed the
- * position on every event, modelling a client that does not exist, which is exactly why 18 green
- * tests missed a total drag freeze.
+ * <p>Crucially, {@link #dispatch} models the rule established from the shipped injected-client
+ * bytecode: the client's tracked pointer position ({@link Client#getMouseCanvasPosition()}) is
+ * written only by its {@code mouseMoved} handler and by the <b>unconsumed</b> path of its
+ * {@code mouseDragged} handler, both of which run <b>after</b> the whole {@code MouseManager}
+ * chain. Presses, releases and clicks never write it. So a listener that consumes drags -- as this
+ * one must, to keep drag events from reaching the game -- sees that position frozen at the press
+ * point for the whole gesture. An earlier harness re-stubbed the position on every event, modelling
+ * a client that does not exist, which is exactly why a fully green suite still missed a total drag
+ * freeze.
  */
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class BagInputListenerTest
@@ -70,7 +70,7 @@ public class BagInputListenerTest
 
 	private static final Rectangle GRID = new Rectangle(100, 200, 176, 224);
 
-	/** The game raster of Rob's {@code uim} profile, derived numerically on card 23. */
+	/** The game raster of a {@code uim} profile the bug was reproduced against, derived numerically. */
 	private static final int REAL_W = 1656;
 	private static final int REAL_H = 1232;
 
@@ -458,17 +458,16 @@ public class BagInputListenerTest
 		assertFalse(click(SLOT0_X, SLOT0_Y).isConsumed());
 	}
 
-	// ---- cards 25/27: the drag freeze --------------------------------------------------------
+	// ---- the drag freeze -----------------------------------------------------------------------
 
 	/**
-	 * Card 27's headline regression, and the one the card 24 harness could not express.
-	 *
-	 * <p>Nothing is stretched and the events already arrive in game space, so this is the simplest
-	 * possible configuration -- the only thing that makes it hard is that the client's tracked
-	 * pointer position never advances, because we consume every drag (card 25, verified from the
-	 * shipped injected-client bytecode). Against the card 24 implementation, which hit-tested that
-	 * frozen position, the drag never crosses the 4px slop and no {@code beginDrag} is ever posted:
-	 * drag-to-rearrange is dead. Resolving from the event's own coordinates is what fixes it.
+	 * The headline regression this harness exists to express: nothing is stretched and the events
+	 * already arrive in game space, so this is the simplest possible configuration -- the only thing
+	 * that makes it hard is that the client's tracked pointer position never advances, because we
+	 * consume every drag (verified from the shipped injected-client bytecode). Against an
+	 * implementation that hit-tested that frozen position, the drag never crosses the 4px slop and
+	 * no {@code beginDrag} is ever posted: drag-to-rearrange is dead. Resolving from the event's own
+	 * coordinates is what fixes it.
 	 */
 	@Test
 	public void dragStillResolvesWhenTheClientNeverAdvancesItsTrackedPositionForConsumedEvents()
@@ -491,7 +490,7 @@ public class BagInputListenerTest
 		order.verify(controller).endDrag(eq(5));
 	}
 
-	// ---- cards 23/24/27: coordinate space ----------------------------------------------------
+	// ---- coordinate space ------------------------------------------------------------------
 
 	/**
 	 * Stretched mode off entirely: no scale, no translator in the chain, event space is game space.
@@ -507,10 +506,10 @@ public class BagInputListenerTest
 	}
 
 	/**
-	 * The ordering that broke live (card 23): we re-enabled after {@code StretchedModePlugin}, so we
-	 * sit ahead of its {@code TranslateMouseListener} and every event carries raw stretched pixels
-	 * at Rob's {@code uim} scale of 1.25. The latch must detect that at press and translate every
-	 * later event ourselves.
+	 * The ordering that broke live: we re-enabled after {@code StretchedModePlugin}, so we sit ahead
+	 * of its {@code TranslateMouseListener} and every event carries raw stretched pixels at a
+	 * {@code uim} scale of 1.25. The latch must detect that at press and translate every later event
+	 * ourselves.
 	 */
 	@Test
 	public void fullGestureWhenDeliveredPreTranslateAt125()
@@ -522,10 +521,11 @@ public class BagInputListenerTest
 	}
 
 	/**
-	 * The other ordering, and the trap that sank option 1 on card 24: stretched mode is on at the
-	 * same 1.25, but Translate ran ahead of us so the events already arrive in game space.
-	 * Translating again would double-translate and land the gesture on the wrong slots, so the latch
-	 * must come out "post-translate" despite {@code isStretchedEnabled()} being true.
+	 * The other ordering, and the trap that sank the approach of translating whenever stretched mode
+	 * is simply enabled: stretched mode is on at the same 1.25, but Translate ran ahead of us so the
+	 * events already arrive in game space. Translating again would double-translate and land the
+	 * gesture on the wrong slots, so the latch must come out "post-translate" despite
+	 * {@code isStretchedEnabled()} being true.
 	 */
 	@Test
 	public void fullGestureWhenDeliveredPostTranslateWhileStretchedIsOn()
@@ -562,10 +562,10 @@ public class BagInputListenerTest
 	}
 
 	/**
-	 * Card 23's exact live symptom, from the other end: pressing an item whose <i>raw</i> coordinates
-	 * fall outside the published grid rectangle entirely. Slot 27 sits at the bottom-right of the
-	 * grid, so at 1.25 its raw coordinates are past both the right and bottom edges. The press must
-	 * still arm a drag on slot 27.
+	 * The exact live symptom, from the other end: pressing an item whose <i>raw</i> coordinates fall
+	 * outside the published grid rectangle entirely. Slot 27 sits at the bottom-right of the grid, so
+	 * at 1.25 its raw coordinates are past both the right and bottom edges. The press must still arm
+	 * a drag on slot 27.
 	 */
 	@Test
 	public void pressWhoseRawCoordinatesFallOutsideTheGridStillResolvesTheCorrectSlot()
