@@ -14,10 +14,6 @@ It is client-side only. Nothing about your bag changes on Jagex's end; the plugi
 which slot each item is drawn in. Your arrangement is saved per character and syncs with your
 RuneLite account.
 
-## Preview
-
-<!-- screenshot: dragging an item inside the looting bag view -->
-
 ## How to use
 
 1. Right-click the looting bag and select "Check" to open the View window.
