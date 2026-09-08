@@ -434,7 +434,8 @@ public class BagInputListenerTest
 	/**
 	 * Regression: AWT delivers pressed, released, clicked. If the click that follows a press we
 	 * consumed is not consumed too, it reaches the client's mouse buffer and can drive the world
-	 * interaction that dismisses the modal-clickthrough window (docs/PLAN.md section 3.4).
+	 * interaction that dismisses the modal-clickthrough window (docs/RESEARCH.md section 1, "Why
+	 * the window closes on the next interaction").
 	 */
 	@Test
 	public void clickAfterAConsumedPressIsAlsoConsumed()

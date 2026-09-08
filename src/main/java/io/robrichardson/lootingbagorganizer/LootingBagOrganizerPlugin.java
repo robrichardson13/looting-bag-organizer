@@ -32,7 +32,8 @@ import net.runelite.client.ui.overlay.OverlayManager;
  * {@link BagInputListener} (AWT thread).
  *
  * <p>Nothing here changes what the bag contains and nothing fires a game action; the layout is
- * cosmetic and lives in our own config (see {@code docs/PLAN.md}).
+ * cosmetic and lives in our own config (see {@code docs/RESEARCH.md} section 1: "There is no
+ * server-side reorder action. Every arrangement is cosmetic and lives in our config.").
  *
  * <p>Logging is deliberately verbose at debug level per the board decision: {@code runClient} runs
  * with {@code --debug}, so a manual test session leaves a log we can debug from. Every lifecycle
@@ -85,7 +86,7 @@ public class LootingBagOrganizerPlugin extends Plugin
 
 	/**
 	 * {@code MouseManager.registerMouseListener} does not de-duplicate, so registration is guarded
-	 * and always torn down in {@link #shutDown()} (CLAUDE.md).
+	 * and always torn down in {@link #shutDown()}.
 	 */
 	private boolean listenersRegistered;
 
@@ -140,8 +141,8 @@ public class LootingBagOrganizerPlugin extends Plugin
 	/**
 	 * The client-thread pass: drains the queue the AWT listener posts to, re-applies the layout if
 	 * anything marked it dirty, publishes the volatiles the AWT tier reads. Uses {@code ClientTick}
-	 * rather than the overlay's render so the queue is drained even on the frame the window closes
-	 * ({@code docs/PLAN.md} section 5). Not logged: it fires every frame.
+	 * rather than the overlay's render so the queue is drained even on the frame the window closes.
+	 * Not logged: it fires every frame.
 	 */
 	@Subscribe
 	public void onClientTick(ClientTick event)
@@ -188,7 +189,7 @@ public class LootingBagOrganizerPlugin extends Plugin
 
 	/**
 	 * The widgets are going away, so any in-flight drag is meaningless. The modal mode is logged
-	 * because {@code docs/PLAN.md} section 3.4 needs it confirmed at runtime (expected 3,
+	 * because {@code docs/TESTING.md} section 2 needs it confirmed at runtime (expected 3,
 	 * MODAL_CLICKTHROUGH).
 	 */
 	@Subscribe

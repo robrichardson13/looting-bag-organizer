@@ -11,7 +11,7 @@ import java.util.List;
  *
  * <p>Slots are sparse: {@code null} is a deliberate empty slot, trailing nulls are never stored.
  * The bag can hold several non-stackable copies of one id, so a slot is addressed by index, never
- * looked up by id alone (see CLAUDE.md, "Rules of thumb").
+ * looked up by id alone (see {@code docs/RESEARCH.md} section 4, "Duplicate ids").
  */
 public class BagLayout
 {
