@@ -1,4 +1,4 @@
-# Manual verification checklist (card C11)
+# Manual verification checklist
 
 Everything below is checked by hand in the dev client. The plugin logs verbosely at `debug` on
 every lifecycle and event edge precisely so this session leaves a log we can debug from, so for
@@ -67,8 +67,8 @@ stack-counting rules get exercised.
       cells 36x32 at pitch 44x32.
 - [ ] **Modal mode of group 81**: close the bag and read
       `Widget group 81 closed (modalMode=?, unload=?): cancelling any drag`. Record the modalMode
-      value (expected 3, `MODAL_CLICKTHROUGH`; `docs/PLAN.md` section 3.4 is an inference until
-      this is seen).
+      value (expected 3, `MODAL_CLICKTHROUGH`). Consuming presses inside the grid keeps the window
+      open only if this holds, since nothing else stops the close.
 
 ## 3. Dragging
 
@@ -105,8 +105,9 @@ stack-counting rules get exercised.
 - [ ] Then click the world outside the window: it still closes normally
       (`Widget group 81 closed (modalMode=..., unload=...)`).
 
-If the window closes on our own press, the consumption argument in `docs/PLAN.md` section 3.4 is
-wrong and approach A is in question — record the modal mode and stop.
+If the window closes on our own press, the assumption that consuming the click is enough to stop
+it is wrong and the whole re-positioning approach is in question — record the modal mode and
+stop.
 
 ## 6. The game's own behaviour on a moved cell
 
@@ -135,34 +136,34 @@ wrong and approach A is in question — record the modal mode and stop.
 - [ ] Disable the plugin with the window open: the grid snaps back to container order and the
       title reads `Looting bag` again.
 
-## 9. Runtime assumptions flagged by the implementation cards
+## 9. Runtime assumptions worth re-checking
 
 Each of these is something the code assumes from a cache dump or from source reading and has never
 been seen live. Confirm each one; if any fails, the log line named is where the failure shows up.
 
-| # | Assumption (card) | How to confirm | Failure signature |
+| # | Assumption | How to confirm | Failure signature |
 |---|---|---|---|
-| 1 | Script **497** builds the grid; there is no `ScriptID` constant (card 1) | Script Inspector while opening the bag | No `Script 497 fired ...` line when the bag opens |
-| 2 | Group 81 is modal mode 3 (`MODAL_CLICKTHROUGH`); the close is driven by the client seeing a click, so consuming ours keeps the window open (cards 1, 12) | Read modalMode from the close line; drag repeatedly | `Widget group 81 closed` during a drag |
-| 3 | `81:5` has 28 dynamic children, empty ones `cc_sethide(1)` at 0x0, occupied at pitch 44x32 (cards 1, 10) | Widget Inspector on 81:5 | `Apply skipped: 81:5 has no dynamic children yet`, or `Applied layout: k of N` with N != 28 |
-| 4 | `getDynamicChildren()` is indexed by container slot with hidden empties present (card 10) | Compare `Bag snapshot from container 516: ...` with what the bag visibly holds | Items appear in the wrong cells even before any drag |
-| 5 | `items.isHidden()` is false and `getBounds()` is non-null canvas coords whenever the View is on screen (card 10) | Grid bounds in `Applied layout: ... grid bounds java.awt.Rectangle[...]` must match the on-screen grid | Bounds of `[0,0,0,0]`, or drags never resolving to a slot |
-| 6 | The deposit flow's TITLE really reads "Add to bag", and the View title never contains that string (cards 10, 11) | Open both flows | `Applied layout` while the deposit dialog is open, or no title/count on the View |
-| 7 | `setOriginalX/Y` + `revalidate()` alone is enough (no size or parent revalidate) and does not break hover/Examine (cards 1, 10) | Section 6 above | Cells move but hover/Examine stay at the old position, or cells do not move at all |
-| 8 | The game never re-lays cells except through 497 (card 1) | Hover, tick, and idle with the window open | Cells snap back to container order with no `Script 497 fired` line preceding it |
-| 9 | Container 516's `getItems()` is container-slot-indexed and may be shorter than 28 (card 10) | Bag with fewer than 28 items | `Bag snapshot from container 516` disagreeing with the visible contents |
-| 10 | Container 516 can read null while the View is open (open-and-close within a tick); the title is then left alone rather than written `(0/28)` (cards 10, 11) | Open and immediately close the bag | `Apply skipped: container 516 is null` is fine; a title of `Looting bag (0/28)` on a non-empty bag is not |
-| 11 | The AWT tier decides consumption purely from published volatiles, one frame behind at worst (card 12) | Press immediately as the window opens/closes | A press consumed with the window shut, or the first press after opening ignored |
-| 12 | `ItemManager.getImage` may return null before the sprite is cached, so the ghost is skipped rather than crashing (card 13) | Drag an item never seen this session | No ghost drawn but no exception; an exception here is a bug |
-| 13 | The click AWT delivers *after* a press we consumed is consumed too (`clickConsumed`), so a plain click inside the grid never reaches the client's mouse buffer (card 18) | Single-click an occupied cell without moving the mouse, repeatedly | `Widget group 81 closed` immediately after a `Bag press ... consumed=true` with no drag lines between |
-| 14 | A drag pins what it touches, so the drop survives the re-apply that follows it (card 18) | Drop an item you have never dragged before onto an empty cell | `Drag end N -> M (layout changed: true)` followed by `Saved looting bag layout ... [...]` whose list is still empty, or the item snapping back on the next `Applied layout` |
-| 15 | A skipped apply keeps the dirty flag and retries next frame instead of losing the signal (card 18) | Open the bag repeatedly, watching the frames around the open | `Apply skipped: ...` logged once with no `Applied layout` ever following for that open window |
-| 16 | The empty-bag `"The bag is empty."` TEXT child at dynamic index 28 (RESEARCH section 1.8) is never touched: our loops stop at index 27 (card 18) | Open a completely empty bag | The empty-bag text moved, resized or missing; `Applied layout: k of 29 children` with k > 0 |
-| 17 | Disabling the plugin while the "Add to bag" dialog is open leaves its title alone (card 18) | Open Add to bag, disable the plugin from the sidebar | The deposit dialog's title changes to `Looting bag` |
-| 18 | Escape is consumed while a press is *armed* on a cell, not only while a drag is active (card 18, minor) | Hold the left button on a cell and press Escape | The interface does not close; releasing then pressing Escape must close it normally |
+| 1 | Script **497** builds the grid; there is no `ScriptID` constant | Script Inspector while opening the bag | No `Script 497 fired ...` line when the bag opens |
+| 2 | Group 81 is modal mode 3 (`MODAL_CLICKTHROUGH`); the close is driven by the client seeing a click, so consuming ours keeps the window open | Read modalMode from the close line; drag repeatedly | `Widget group 81 closed` during a drag |
+| 3 | `81:5` has 28 dynamic children, empty ones `cc_sethide(1)` at 0x0, occupied at pitch 44x32 | Widget Inspector on 81:5 | `Apply skipped: 81:5 has no dynamic children yet`, or `Applied layout: k of N` with N != 28 |
+| 4 | `getDynamicChildren()` is indexed by container slot with hidden empties present | Compare `Bag snapshot from container 516: ...` with what the bag visibly holds | Items appear in the wrong cells even before any drag |
+| 5 | `items.isHidden()` is false and `getBounds()` is non-null canvas coords whenever the View is on screen | Grid bounds in `Applied layout: ... grid bounds java.awt.Rectangle[...]` must match the on-screen grid | Bounds of `[0,0,0,0]`, or drags never resolving to a slot |
+| 6 | The deposit flow's TITLE really reads "Add to bag", and the View title never contains that string | Open both flows | `Applied layout` while the deposit dialog is open, or no title/count on the View |
+| 7 | `setOriginalX/Y` + `revalidate()` alone is enough (no size or parent revalidate) and does not break hover/Examine | Section 6 above | Cells move but hover/Examine stay at the old position, or cells do not move at all |
+| 8 | The game never re-lays cells except through 497 | Hover, tick, and idle with the window open | Cells snap back to container order with no `Script 497 fired` line preceding it |
+| 9 | Container 516's `getItems()` is container-slot-indexed and may be shorter than 28 | Bag with fewer than 28 items | `Bag snapshot from container 516` disagreeing with the visible contents |
+| 10 | Container 516 can read null while the View is open (open-and-close within a tick); the title is then left alone rather than written `(0/28)` | Open and immediately close the bag | `Apply skipped: container 516 is null` is fine; a title of `Looting bag (0/28)` on a non-empty bag is not |
+| 11 | The AWT tier decides consumption purely from published volatiles, one frame behind at worst | Press immediately as the window opens/closes | A press consumed with the window shut, or the first press after opening ignored |
+| 12 | `ItemManager.getImage` may return null before the sprite is cached, so the ghost is skipped rather than crashing | Drag an item never seen this session | No ghost drawn but no exception; an exception here is a bug |
+| 13 | The click AWT delivers *after* a press we consumed is consumed too (`clickConsumed`), so a plain click inside the grid never reaches the client's mouse buffer | Single-click an occupied cell without moving the mouse, repeatedly | `Widget group 81 closed` immediately after a `Bag press ... consumed=true` with no drag lines between |
+| 14 | A drag pins what it touches, so the drop survives the re-apply that follows it | Drop an item you have never dragged before onto an empty cell | `Drag end N -> M (layout changed: true)` followed by `Saved looting bag layout ... [...]` whose list is still empty, or the item snapping back on the next `Applied layout` |
+| 15 | A skipped apply keeps the dirty flag and retries next frame instead of losing the signal | Open the bag repeatedly, watching the frames around the open | `Apply skipped: ...` logged once with no `Applied layout` ever following for that open window |
+| 16 | The empty-bag `"The bag is empty."` TEXT child at dynamic index 28 (RESEARCH section 1.8) is never touched: our loops stop at index 27 | Open a completely empty bag | The empty-bag text moved, resized or missing; `Applied layout: k of 29 children` with k > 0 |
+| 17 | Disabling the plugin while the "Add to bag" dialog is open leaves its title alone | Open Add to bag, disable the plugin from the sidebar | The deposit dialog's title changes to `Looting bag` |
+| 18 | Escape is consumed while a press is *armed* on a cell, not only while a drag is active | Hold the left button on a cell and press Escape | The interface does not close; releasing then pressing Escape must close it normally |
 
 ## 10. Reporting back
 
-Record for card C11: the script id actually seen, the modal mode value, and any row of the table
-above that failed, with the surrounding 20 lines of `/tmp/lbo-session.log`. Findings that change
-what the code should do go into `docs/RESEARCH.md`.
+Record the script id actually seen, the modal mode value, and any row of the table above that
+failed, with the surrounding 20 lines of `/tmp/lbo-session.log`. Findings that change what the
+code should do go into `docs/RESEARCH.md`.

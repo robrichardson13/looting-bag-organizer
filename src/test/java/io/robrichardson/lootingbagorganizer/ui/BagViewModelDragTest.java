@@ -13,7 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Card C5 acceptance tests for {@link BagViewModel} hit-testing and drag state. Plain JUnit 4, no
+ * Acceptance tests for {@link BagViewModel} hit-testing and drag state. Plain JUnit 4, no
  * Mockito, no RuneLite imports.
  */
 public class BagViewModelDragTest
@@ -212,7 +212,7 @@ public class BagViewModelDragTest
 	}
 
 	/**
-	 * Regression for card 19: on a fresh (empty) layout, 4 items auto-place into slots 0-3.
+	 * Regression test: on a fresh (empty) layout, 4 items auto-place into slots 0-3.
 	 * Dragging slot 1's item into empty slot 6 leaves slot 1 unpinned, so the next {@code arrange}
 	 * treats it as free again and every item after it in container order slides forward to fill
 	 * the gap: item2 (originally slot 2) lands at slot 1, item3 (originally slot 3) lands at

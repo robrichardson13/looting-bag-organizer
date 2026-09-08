@@ -24,7 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 /**
- * Covers the card 13 acceptance list for {@link BagDragOverlay}: it draws nothing unless the
+ * Covers the full acceptance list for {@link BagDragOverlay}: it draws nothing unless the
  * model reports a drag in progress, it never reads {@link BagInputListener}'s AWT-only state
  * (only {@link BagViewController}'s client-thread-safe getters and its {@link BagViewModel}), and
  * it draws the ghost image plus a target highlight only when there is somewhere sensible to put
