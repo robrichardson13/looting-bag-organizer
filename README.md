@@ -20,7 +20,7 @@ RuneLite account.
 
 ## How to use
 
-1. Open the looting bag ("View").
+1. Right-click the looting bag and select "Check" to open the View window.
 2. Drag any item onto another slot.
 3. That's it. The layout is saved and re-applied every time you open the bag.
 
