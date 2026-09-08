@@ -33,7 +33,7 @@ import net.runelite.client.callback.ClientThread;
  *
  * <p>Script 497 rebuilds the grid from scratch on every transmit of container 516, resetting all
  * positions, so the layout is re-applied after every rebuild rather than once on open (see
- * {@code docs/RESEARCH.md} section 2 and {@code docs/PLAN.md} section 5).
+ * {@code docs/RESEARCH.md} section 2, "Verdict for the looting bag: feasible").
  *
  * <p>Threading: the model and every {@code Client}/{@code Widget} access is client thread only.
  * The AWT tier reads the {@code volatile} fields published here ({@link #isViewOpen()},
@@ -115,7 +115,8 @@ public class BagViewController
 
 	/**
 	 * Saves any pending layout change, then restores the game's own cell order on the client
-	 * thread so a disabled plugin leaves no trace ({@code docs/PLAN.md} section 5).
+	 * thread so a disabled plugin leaves no trace (see {@code docs/RESEARCH.md} section 2,
+	 * "Restoring on shutdown").
 	 */
 	public void shutDown()
 	{

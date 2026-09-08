@@ -24,7 +24,7 @@ import net.runelite.client.ui.overlay.OverlayPosition;
  * the hovered target cell. Draws nothing unless {@link BagViewController}'s model reports a drag
  * in progress; renders the source cell's item exactly as it last stood in {@link
  * BagViewController#getSlots()}, since the source cell keeps rendering in place while a drag is
- * active (docs/PLAN.md section 3.2).
+ * active.
  *
  * <p>{@code render} runs on the client thread, so it is safe to read {@link BagViewController}'s
  * model and published state directly here; unlike {@link BagInputListener}, this class never
@@ -41,7 +41,7 @@ public class BagDragOverlay extends Overlay
 	private final ItemManager itemManager;
 	private final BagViewController controller;
 
-	/** Debug-logged only on the start/stop edge, never per frame (docs/PLAN.md logging rule). */
+	/** Debug-logged only on the start/stop edge, never per frame. */
 	private boolean rendering;
 
 	@Inject

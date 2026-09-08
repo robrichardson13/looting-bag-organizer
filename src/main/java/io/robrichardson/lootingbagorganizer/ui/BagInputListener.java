@@ -109,8 +109,9 @@ public class BagInputListener implements MouseListener, KeyListener
 	 * True when the press+release that precede the next click were consumed. AWT delivers pressed,
 	 * released, then clicked, so {@link #pressConsumed} has already been cleared by the time the
 	 * click arrives; an unconsumed click reaches the client's mouse buffer and can drive the world
-	 * interaction that dismisses this modal-clickthrough window (docs/PLAN.md section 3.4). Same
-	 * two-flag pattern as bankless-bank's {@code BankInputListener}.
+	 * interaction that dismisses this modal-clickthrough window (docs/RESEARCH.md section 1, "Why
+	 * the window closes on the next interaction"). Same two-flag pattern as bankless-bank's
+	 * {@code BankInputListener}.
 	 */
 	private boolean clickConsumed;
 
@@ -205,9 +206,10 @@ public class BagInputListener implements MouseListener, KeyListener
 	@Override
 	public MouseEvent mouseMoved(MouseEvent e)
 	{
-		// Never consumed: hover tooltips (qty x price = total) are untouched (docs/PLAN.md 3.2.5),
-		// and it is the unconsumed move stream that keeps the client's tracked pointer position
-		// fresh for the next press, which is what we latch the coordinate orientation from.
+		// Never consumed: hover tooltips (qty x price = total, docs/RESEARCH.md section 1 point 7)
+		// are untouched, and it is the unconsumed move stream that keeps the client's tracked
+		// pointer position fresh for the next press, which is what we latch the coordinate
+		// orientation from.
 		return e;
 	}
 

@@ -255,7 +255,8 @@ layer four heuristics on top of the base container read, all needed only because
 itself is silent outside a view:
 
 1. **View detection via widget text, not `WidgetLoaded`.** Interface 81 is shared by the "View"
-   and "Add to bag" (deposit) flows, confirming what CLAUDE.md already flags. `onGameTick()`
+   and "Add to bag" (deposit) flows, confirming the View/deposit ambiguity already noted in
+   section 1 above ("Telling 'View' from 'Add to bag'"). `onGameTick()`
    (`LootingBag.java:29-53`) reads `client.getWidget(81, 5)` (the `ITEMS` container) and checks
    child 28's text for `"The bag is empty."` to detect an empty bag while viewing — the same
    child DWMS's widget notes in section 1 above already identify. `checkForDeposit()`
@@ -306,8 +307,9 @@ DWMS/bankless-bank tracking machinery.** The Organizer only ever renders a layou
 interface 81's View window is open, and while it's open, `client.getItemContainer(516)` is
 continuously fresh — the same condition DWMS's own watcher relies on to flip `justUpdated`. So:
 
-- No `ItemContainerChanged` bookkeeping is needed beyond what CLAUDE.md's architecture already
-  specifies (re-read 516 on `ItemContainerChanged(516)`, since "container 516 is stale between
+- No `ItemContainerChanged` bookkeeping is needed beyond the Organizer's own architecture
+  (re-read 516 on `ItemContainerChanged(516)`, not on a timer — see
+  `LootingBagOrganizerPlugin.onItemContainerChanged`), since "container 516 is stale between
   views" only matters if something needs to *know contents while the window is closed* — the
   Organizer never does).
 - No menu-click interception, chat-message vetoes, or tick-countdown "suspended item" logic.
@@ -348,7 +350,8 @@ confirmed snapshot.
 as `1` free-slot-equivalent if `itemManager.getItemComposition(itemId).isStackable()` (any
 stack occupies one slot regardless of quantity) else counts as its full `quantity` (each
 non-stackable copy occupies its own slot) — the same "count occupied slots, not items" rule
-CLAUDE.md's rule of thumb about non-stackables implies. `items` itself is a plain
+the rule this project's own taken/free count follows (`BagViewController.applyLayout` counts
+`id > 0`, not quantity). `items` itself is a plain
 `Map<Integer, Integer>` (`LootingBag.java:27`), not a positional/sparse model — this plugin only
 needs a count and a value, never a layout, so it never had to solve the "duplicate id ->
 which slot" problem docs/RESEARCH.md section 4 flags for us.
@@ -371,7 +374,7 @@ goes stale again the moment the View window closes.
 | `onWidgetLoaded` (group `WILDERNESS_LOOTINGBAG` = 81) | 184-190 | records `tickBagViewed = client.getTickCount()`; does **not** itself sync — see below |
 | `onPostClientTick` | 193-205 | if still the same tick the widget loaded on, reads `client.getItemContainer(InventoryID.LOOTING_BAG)` and calls `lootingBag.syncItems(...)`. Comment at 196-199 explains why: the bag can open *and* close within one game tick before it finishes loading, so gating the read on "did the widget-load tick just happen" (rather than syncing straight from `onWidgetLoaded`) avoids syncing off a container that hasn't been populated yet; if the widget closes before this fires, `onWidgetClosed` clears the marker so no stale read happens |
 | `onWidgetClosed` (group 81) | 207-214 | resets `tickBagViewed = -1`, cancelling a pending sync from the branch above |
-| `onItemContainerChanged` | 216-225 | container `INV` (36) -> `handleInventoryUpdated` (deposit/pickup diffing, see below); container `LOOTING_BAG` (516) -> `lootingBag.syncItems(...)` directly — the authoritative resync path, same event CLAUDE.md already specifies for us |
+| `onItemContainerChanged` | 216-225 | container `INV` (36) -> `handleInventoryUpdated` (deposit/pickup diffing, see below); container `LOOTING_BAG` (516) -> `lootingBag.syncItems(...)` directly — the authoritative resync path, same event this project already re-applies the layout on (`LootingBagOrganizerPlugin.onItemContainerChanged`) |
 | `onGameTick` | 141-157 | expires/promotes `possibleSuppliesPickupActions` (ground-pickup items that might have routed to the inventory instead of the bag, per a "supplies" client setting) after 1 tick, crediting the bag if the item never showed up in inventory |
 | `onVarClientIntChanged` (`VarClientInt.INPUT_TYPE`) | 159-181 | tracks the numeric "deposit X" chat-box input opening/closing, capturing the typed amount |
 | `onMenuOptionClicked` | 227-272 | three unrelated purposes: (a) reading the "Store 1/5/10/All/X" deposit-dialog option text once `depositingX` is armed, (b) detecting "Use item on looting bag" (`WIDGET_TARGET_ON_WIDGET`, option `"Use"`) to arm `lastItemIdUsedOnLootingBag`/`lastDepositedXAmount`, (c) recording ground-item pickup / telegrab clicks as a `PickupAction` with a source tile, for the `ItemDespawned` correlation below |
@@ -405,9 +408,10 @@ gate for *when* to trust `client.getItemContainer(516)`.
 **What's reusable for our View-window taken/free count.** Nothing here shows a trick for
 writing into interface 81 — this plugin deliberately stays off it and anchors to the inventory
 icon instead, which is a valid model for us only if we *don't* want the count inside the View
-window (CLAUDE.md's rule against creating our own widgets would rule out mimicking its approach
-verbatim inside 81 anyway; we'd have to edit `TOTAL` (81:6) or add a sibling text child, which
-this plugin gives no precedent for). What *is* directly reusable:
+window (this project's rule against creating our own widgets — `BagViewController.updateTitle`
+only ever calls `setText`, never adds a widget — would rule out mimicking its approach verbatim
+inside 81 anyway; we'd have to edit `TOTAL` (81:6) or add a sibling text child, which this plugin
+gives no precedent for). What *is* directly reusable:
 
 - The `getFreeSlots()` counting rule (occupied-slot count, not item count, using `isStackable()`
   as the branch) is exactly what our `BagLayout`/`BagViewController` should compute from the
@@ -420,5 +424,5 @@ this plugin gives no precedent for). What *is* directly reusable:
   (`LootingBagPlugin.java:184-214`) is a useful caution, not a pattern to reuse as-is: it
   confirms empirically that group 81 can open and close within a single tick before its
   container data is ready, which is a real edge case our controller's refresh/drain-queue logic
-  (CLAUDE.md's "Threading model") should tolerate — e.g. don't assume a `WidgetLoaded(81)` this
-  tick guarantees container 516 is already populated.
+  (`BagViewController`'s threading design, see its class javadoc) should tolerate — e.g. don't
+  assume a `WidgetLoaded(81)` this tick guarantees container 516 is already populated.

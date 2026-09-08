@@ -171,7 +171,7 @@ public class BagViewModel
 
 	/**
 	 * Canvas bounds of the grid layer ({@code 81:5}), used to resolve {@link #slotAt(Point)} and
-	 * drag hover. Published by the controller each client-thread pass (docs/PLAN.md section 3.1).
+	 * drag hover. Published by the controller each client-thread pass.
 	 */
 	public void setGridBounds(Rectangle gridBounds)
 	{
@@ -182,7 +182,8 @@ public class BagViewModel
 	 * The slot whose pitch cell contains the given canvas point, or {@code -1} if the point is
 	 * outside the grid or no grid bounds have been published yet. Pure delegation to
 	 * {@link BagGeometry#slotAt(Rectangle, int, int)}; empty cells are hidden by the game at 0x0
-	 * and cannot be hit-tested directly (docs/PLAN.md section 3.1).
+	 * and cannot be hit-tested directly (docs/RESEARCH.md section 2, "Empty slots as drop
+	 * targets").
 	 */
 	public int slotAt(Point p)
 	{
@@ -195,8 +196,8 @@ public class BagViewModel
 
 	/**
 	 * Arms a drag from an occupied slot. Called once the AWT listener's press has moved past the
-	 * slop threshold (docs/PLAN.md section 3.2). The source cell keeps rendering in place; only the
-	 * overlay reacts to this state.
+	 * slop threshold. The source cell keeps rendering in place; only the overlay reacts to this
+	 * state.
 	 */
 	public void beginDrag(int sourceSlot)
 	{
@@ -222,7 +223,7 @@ public class BagViewModel
 	 * source slot cancels with no change. Otherwise the two slots are swapped via
 	 * {@link BagLayout#moveSlot(int, int)} — a move when the target was empty, a swap when it was
 	 * occupied — and both slots end up pinned in the layout, since a drag is always a deliberate
-	 * placement (docs/PLAN.md sections 2 and 3.2).
+	 * placement.
 	 *
 	 * @return {@code true} if the layout changed; {@code false} for a cancel, an out-of-grid drop,
 	 * or a call with no drag in progress
@@ -254,8 +255,8 @@ public class BagViewModel
 		// bag from "auto-arranged" to "player-arranged": every currently displayed item has to be
 		// pinned to its display slot first, not just the two slots the drag touches. Otherwise the
 		// slot the dragged item vacated stays unreserved, and the next arrange's free-slot pass
-		// (docs/PLAN.md section 2, "new items: first free slot in container order") slides every
-		// later, untouched item forward to fill the gap.
+		// (docs/RESEARCH.md section 4, "new items take the first free slot in container order")
+		// slides every later, untouched item forward to fill the gap.
 		lastFreezeCount = freezeDisplayedArrangement();
 
 		layout.moveSlot(source, targetSlot);

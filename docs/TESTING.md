@@ -31,8 +31,10 @@ tail -f /tmp/lbo-session.log | grep -E 'BagViewController|Bag press|Bag drag|Scr
 ```
 
 Logging in: `runClient` logs into a Jagex account automatically if
-`~/.runelite/credentials.properties` exists — see CLAUDE.md for the one-liner that creates it, and
-delete the file when the session is over.
+`~/.runelite/credentials.properties` exists. Create it by pulling `JX_ACCESS_TOKEN`,
+`JX_REFRESH_TOKEN`, `JX_SESSION_ID`, `JX_CHARACTER_ID` and `JX_DISPLAY_NAME` out of a running
+official RuneLite client's launch environment and saving them as `KEY=VALUE` lines, one per
+variable; delete the file when the session is over.
 
 To reach the bag: any looting bag in the inventory, in the Wilderness (or with the Wilderness
 requirement satisfied), right-click and select "Check" to open the View window. Have at least 5-6 items in it, including one
